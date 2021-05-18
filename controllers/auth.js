@@ -3,17 +3,23 @@ const { validationResult } = require('express-validator')
 const User = require('../models/User')
 
 exports.getLogin = (req,res,next) => {
+    let errMsg = req.flash('error')
+    if(errMsg.length > 0){
+        errMsg = errMsg[0]
+    }else{
+        errMsg = null
+    }
     
     res.render('auth/login', {
         pageTitle: 'Login',
         path: '/login',
-        isAuth: req.session.isLoggedIn,
-        errorMessage: null
+        errorMessage: errMsg
     })
 }
 
 exports.postLogin = (req,res,next) => {
     // req.isLoggedIn = true
+    //res.redirect('/')
     // res.setHeader('Set-Cookie', 'loggedIn=true')
 
     const { email, password } = req.body
@@ -23,7 +29,6 @@ exports.postLogin = (req,res,next) => {
         return res.status(422).render('auth/login', {
             pageTitle: 'Login',
             path: '/login',
-            isAuth: req.session.isLoggedIn,
             errorMessage: errors.array()[0].msg
         })
     }
@@ -31,6 +36,7 @@ exports.postLogin = (req,res,next) => {
     User.findOne({ email: email}).then((user) => {
         //if user not found
         if(!user){
+            req.flash('error', 'Invalid Email or Password')
             return res.redirect('/login')
         }
 
@@ -45,6 +51,7 @@ exports.postLogin = (req,res,next) => {
                 })
             }
             //invalid email or password
+            req.flash('error', 'Invalid Email or Password')
             res.redirect('/login')
         }).catch(err => console.log(err))
 
@@ -60,11 +67,17 @@ exports.postLogout = (req,res,next) => {
 }
 
 exports.getSignup = (req,res,next) => {
+    let errMsg = req.flash('error')
+    if(errMsg.length > 0){
+        errMsg = errMsg[0]
+    }else{
+        errMsg = null
+    }
+
     res.render('auth/signup', {
         pageTitle: 'Sign Up',
         path: '/signup',
-        isAuth: req.session.isLoggedIn,
-        errorMessage: null
+        errorMessage: errMsg
     })
 }
 
@@ -80,7 +93,6 @@ exports.postSignup = (req,res,next) => {
             pageTitle: 'Sign Up',
             path: '/signup',
             errorMessage: errors.array()[0].msg,
-            isAuth: req.session.isLoggedIn
         })
     }
 

@@ -3,6 +3,8 @@ const path = require('path');
 const mongoose = require('mongoose')
 const session = require('express-session')
 const MongoDBStore = require('connect-mongodb-session')(session);
+const csrf = require('csurf')
+const flash = require('connect-flash')
 require('dotenv').config()
 
 const adminRouters = require('./routes/admin');
@@ -18,6 +20,7 @@ const store = new MongoDBStore({
     uri: process.env.MONGODB_URL,
     collection: 'sessions'
 })
+const csrfProtection = csrf()
 app.use(express.urlencoded({extended:false}));
 
 //app.set = allows us to set any values globally on our express application
@@ -33,6 +36,8 @@ app.use(session({
     saveUninitialized: false,
     store: store
 }))
+app.use(csrfProtection)
+app.use(flash())
 
 // Dummy Auth
 app.use((req,res,next) => {
@@ -47,6 +52,12 @@ app.use((req,res,next) => {
         next()
     }).catch(err => console.log(err))
 
+})
+
+app.use((req,res,next) => {
+    res.locals.csrfToken = req.csrfToken()
+    res.locals.isAuth = req.session.isLoggedIn
+    next()
 })
 
 //--------------------Middleware--------------------
@@ -66,15 +77,15 @@ mongoose.connect(process.env.MONGODB_URL, {
     console.log("Connected to Database")
 
     //not necessary for production. Just a dummy auth for id
-    User.findOne().then(user => {
-        if(!user){
-            const user = new User({
-                username: 'Sushi',
-                email: 'maki@zushi.com'
-            })
-            user.save()
-        }
-    })
+    // User.findOne().then(user => {
+    //     if(!user){
+    //         const user = new User({
+    //             username: 'Sushi',
+    //             email: 'maki@zushi.com'
+    //         })
+    //         user.save()
+    //     }
+    // })
 
     app.listen(5000, () => console.log('Server connected to port 5000'));
 }).catch(err => console.log(err))

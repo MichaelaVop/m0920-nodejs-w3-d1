@@ -1,15 +1,36 @@
 const Product = require('../models/Products')
+const { validationResult } = require('express-validator')
 
 exports.getAddProduct = (req, res, next) => {
+  let errorMsg = req.flash('error')
+  if (errorMsg.length > 0) {
+    errorMsg = errorMsg[0] 
+  } else {
+    errorMsg = null
+  }
+
   res.render('admin/edit-product', {
     pageTitle: 'Add a product',
     path: '/admin/add-product',
     editing: false,
-    isAuth: req.session.isLoggedIn
+    errorMsg: null,
+    csrfToken: req.csrfToken()
   })
 }
 
 exports.postAddProduct = (req, res, next) => {
+
+  const errors = validationResult(req)
+
+  if(!errors.isEmpty()) {
+    return res.status(422).render('admin/edit-product', {
+      pageTitle: 'Add a product',
+      path: '/admin',
+      editing: false,
+      errorMsg: errors.array()
+    })
+  }
+
   const product = new Product({
     title: req.body.title,
     price: req.body.price,
@@ -34,7 +55,6 @@ exports.getEditProduct = (req, res, next) => {
         path: '/admin/edit-product',
         editing: editMode,
         product: product,
-        isAuth: req.session.isLoggedIn
       })
     })
     .catch((err) => console.log(err))
@@ -76,7 +96,6 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: 'Admin Products',
         path: '/admin/products',
-        isAuth: req.session.isLoggedIn
       });
     })
     .catch(err => console.log(err));
